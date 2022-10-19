@@ -31,34 +31,46 @@ class CensusData:
         
         else:
             input_file = open(self.file_name, "r", newline='', encoding="iso-8859-1")
-            skip_lines(input_file, lines_to_skip)
+            skip_lines(input_file, lines_to_skip_census)
             census_data_reader = csv.DictReader(input_file, delimiter=',', quotechar='"')
             for row in census_data_reader:
-                print(row)
+                pop = row["All people"]
+                self.data_dict[row["Region"], row["Range"]] = pop
+            return True
+            
                 
     def regions(self):
         """
         create an empty list, and append the key values unde region 
         """
-        regions = []
-        for key in self.data_dict.keys():
-            regions.append(key)
-            return regions
+        input_file = open(self.file_name, "r", newline='', encoding="iso-8859-1")
+        skip_lines(input_file, lines_to_skip_census)
+        census_data_reader = csv.DictReader(input_file, delimiter=',', quotechar='"')
+        regions_list = []
+        for row in census_data_reader:
+            regions_list.append(row["Region"])
+        regions_list_no_dupes = list(dict.fromkeys(regions_list))
+        return regions_list_no_dupes
+        
     
     def total_population(self, region, age_value):
+        for region, age_value in self.data_dict:
+            if region in self.data_dict.keys():
+                if age_value in self.data_dict.keys():
+                    return self.data_dict.values()
+            
         
-        if region not in self.data_dict.keys("Region"):
-            return "0"
-        
-        elif age_value >= 85 and age_value <= 89:
-            pass
 
     
-lines_to_skip = 4
+lines_to_skip_census = 4
 census_data_file = "/Users/garybannon/Desktop/Intro to PP/assignment/DC1117SC.csv"
 loaded_census_data = CensusData(census_data_file)
-
-print(loaded_census_data.load())
+loaded_census_data.load()
+#print(loaded_census_data.data_dict)
+print(loaded_census_data.data_dict["Wishaw", "76"])
+#loaded_census_data.total_population(region, age_value)
+#print(loaded_census_data.data_dict)
+#print(loaded_census_data.regions())
 
 
 
