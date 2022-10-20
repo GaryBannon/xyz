@@ -39,7 +39,6 @@ class CensusData:
             input_file.close()
             return True
             
-                
     def regions(self):
         """
         create an empty list, and append the key values unde region 
@@ -54,16 +53,36 @@ class CensusData:
         input_file.close()
         return regions_list_no_dupes
         
-    
     def total_population(self, input_region, age_value):
-        if input_region not in region_list:
-            return 0
-        
-        else:
-            for self.data_dict[input_region] in range(0, age_value):
-                pass
+        input_file = open(self.file_name, "r", newline='', encoding="iso-8859-1")
+        skip_lines(input_file, lines_to_skip_census)
+        census_data_reader = csv.DictReader(input_file, delimiter=',', quotechar='"')
+        census_region_list = loaded_census_data.regions()
+        population_list = []
+        for row in census_data_reader:
+            if input_region not in census_region_list:
+                return 0
+            if input_region != row["Region"]:
+                continue
+            elif row["Range"] == "All people":
+                continue
+            elif row["Range"] == "Under 1":
+                row["Range"] = 0
+            elif row["Range"] == "85 to 89":
+                row["Range"] = 89
+            elif row["Range"] == "90 to 94":
+                row["Range"] = 94
+            elif row["Range"] == "95 and over":
+                row["Range"] = 100
+            elif int(row["Range"]) == age_value:
+                break
+            elif input_region == row["Region"]:
+                population_list.append(int(row["All people"]))
+        total_population = sum(population_list)
+        return total_population
                 
 class SIMD_Data:
+    
     def __init__(self, file_name):
         self.file_name = file_name
         self.data_dict = {}
@@ -101,8 +120,8 @@ class SIMD_Data:
         """
         a function which returns a list of the available regions from the SIMD data
         """
-        regions_list = list(self.data_dict.keys()) #creates a list of the keys in the data_dict
-        return regions_list
+        SIMD_regions_list = list(self.data_dict.keys()) #creates a list of the keys in the data_dict
+        return SIMD_regions_list
     
     def lowest_SIMD(self):
         lowest_region = min(self.data_dict, key=self.data_dict.get) #finds the lowest value in the values of the dict and returns the corresponding key
@@ -115,11 +134,10 @@ lines_to_skip_census = 4
 census_data_file = "/Users/garybannon/Desktop/Intro to PP/assignment/DC1117SC.csv"
 loaded_census_data = CensusData(census_data_file)
 loaded_census_data.load()
-#print(loaded_census_data.data_dict)
+print(loaded_census_data.total_population("Wishaw", 45))
 #print(loaded_census_data.data_dict["Wishaw", "76"])
-#loaded_census_data.total_population(region, age_value)
 #print(loaded_census_data.data_dict)
-#region_list = loaded_census_data.regions()
+#census_region_list = loaded_census_data.regions()
 #print(region_list)
 #print(loaded_census_data.total_population("Wishaw", 67))
 
@@ -128,7 +146,7 @@ loaded_SIMD = SIMD_Data(SIMD_data_file)
 loaded_SIMD.load()
 #print(loaded_SIMD.data_dict)
 #print(loaded_SIMD.regions())
-print(loaded_SIMD.lowest_SIMD())
+#print(loaded_SIMD.lowest_SIMD())
 
 
 
