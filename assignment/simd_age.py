@@ -1,8 +1,6 @@
 import os.path
 import csv
-
 lines_to_skip_census = 4
-
 
 def skip_lines(file_connection, lines_to_skip):
     """
@@ -53,7 +51,13 @@ class CensusData:
             regions_list.append(row["Region"]) #adds each rows region to the list, this will have duplicates
         regions_list_no_dupes = list(dict.fromkeys(regions_list)) #turns the list into a dict as this removes duplicates, then back into a list 
         input_file.close()
-        return regions_list_no_dupes #returns list with no duplicate values
+        for i in range(4):
+            """
+            removes the unnecessary info at the end of the list
+            """
+            del regions_list_no_dupes[-1] 
+            i += 1
+        return regions_list_no_dupes #returns list with no duplicate values or irrelevant lines
         
     def total_population(self, input_region, age_value):
         input_file = open(self.file_name, "r", newline='', encoding="iso-8859-1")
@@ -69,7 +73,7 @@ class CensusData:
             elif row["Range"] == "All people":
                 continue #skips the headings row
             elif row["Range"] == "Under 1":
-                row["Range"] = 0 
+                population_list.append(int(row["All people"]))
             elif row["Range"] == "85 to 89":
                 row["Range"] = 89 
             elif row["Range"] == "90 to 94":
@@ -78,14 +82,18 @@ class CensusData:
                 row["Range"] = 100 
             #the above lines convert the ranges to a value so the loop can read them 
             elif int(row["Range"]) == age_value:
+                population_list.append(int(row["All people"]))
                 break #stops the loop once input age is reached
             elif input_region == row["Region"]:
                 population_list.append(int(row["All people"])) #appends integer value of population to the list 
         total_population = sum(population_list) 
         return total_population 
-                
+
+
 class SIMD_Data:
-    
+    """
+    a class to hold analysis functions
+    """
     def __init__(self, file_name):
         self.file_name = file_name
         self.data_dict = {} 
@@ -103,23 +111,26 @@ class SIMD_Data:
         else:
             input_file = open(self.file_name, "r", newline='', encoding="iso-8859-1") 
             SIMD_data_reader = csv.DictReader(input_file, delimiter=',', quotechar='"') 
-            region_rank_list = [] #creates empty list to store ranks in order to find an average 
+             #creates empty list to store ranks in order to find an average 
             for row in SIMD_data_reader:
                 """
-                when the row that is being read contains a value for region that has not yet been added to the dict
-                the list is cleared ready for a new regions values to be appended.
-                the final average from the pervious region is added to the dict as the value before clearing.
+                if the region has not been seen yet, add to the dictionary. if it has already appeared,
+                append the rank value to the list in the dict value
                 """
                 if row["MMWname"] not in self.data_dict:
-                    region_rank_list.clear() #clears the list of ranks if the current region has not appeared in data_dict yet 
-                    self.data_dict[row["MMWname"]] = 0 #adds the region name to the dict with 0 as value
+                    self.data_dict[row["MMWname"]] = [int(row["SIMD2020v2_Rank"])]
                 
                 elif row["MMWname"] in self.data_dict:
-                    region_rank_list.append(int(row["SIMD2020v2_Rank"])) #appends the subregions rank to the rank list 
-                    average = sum(region_rank_list)/len(region_rank_list) #finds rolling average rank by summing the values in list and dividing by the length of list
-                    self.data_dict[row["MMWname"]] = average #sets the average as the value for the regions key in the dict 
+                    self.data_dict[row["MMWname"]].append(int(row["SIMD2020v2_Rank"])) #appends row to value list in data_dict
+            
+            for key in self.data_dict:
+                """
+                get value list from the key, find the average of the value list and replace the list with the average of the list
+                """
+                value = self.data_dict[key]
+                average = sum(value)/len(value)
+                self.data_dict[key] = average
             input_file.close()
-        
             return True
     
     def regions(self):
@@ -130,8 +141,10 @@ class SIMD_Data:
         return SIMD_regions_list
     
     def lowest_SIMD(self):
+        """
+        finds region with lowest average SIMD rank
+        """
         lowest_region = min(self.data_dict, key=self.data_dict.get) #finds the lowest value in the values of the dict and returns the corresponding key
-        
         return lowest_region
 
 
@@ -146,25 +159,9 @@ def main():
     
     print(simd_data.lowest_SIMD())
     print(simd_data.data_dict[simd_data.lowest_SIMD()])
-    print(census_data.total_population(simd_data.lowest_SIMD(), 15))
+    print(census_data.total_population("Wishaw", 6))
+    print(simd_data.regions())
     pass
 
 if __name__ == '__main__':
     main()
-
-
-# #lines_to_skip_census = 4
-# census_data_file = "/Users/garybannon/Desktop/Intro to PP/assignment/DC1117SC.csv"
-# loaded_census_data = CensusData(census_data_file)
-# print(loaded_census_data.load())
-# #print(loaded_census_data.data_dict)
-# print(loaded_census_data.total_population("Upper Braes", 56))
-# print(loaded_census_data.data_dict["Wishaw", "76"])
-# print(loaded_census_data.total_population("Wishaw", 45))
-
-# SIMD_data_file = "/Users/garybannon/Desktop/Intro to PP/assignment/SIMD_2020v2csv.csv"
-# loaded_SIMD = SIMD_Data(SIMD_data_file)
-# #loaded_SIMD.load()
-# #print(loaded_SIMD.data_dict)
-# #print(loaded_SIMD.regions())
-# #print(loaded_SIMD.lowest_SIMD())
